@@ -3,6 +3,7 @@ package com.example.segundaentregadas;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
@@ -54,6 +55,18 @@ public class MapActivity extends AppCompatActivity {
                     .setPositiveButton("Sí", (dialog, which) -> cerrarSesion())
                     .setNegativeButton("No", null)
                     .show();
+        });
+
+        Button btnVerPerfil = findViewById(R.id.btnVerPerfil);
+        btnVerPerfil.setOnClickListener(v -> {
+            Intent intent = new Intent(MapActivity.this, PerfilActivity.class);
+
+            // Pasa los datos del usuario (ejemplo usando SharedPreferences)
+            SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+            intent.putExtra("nombre", prefs.getString("nombre", ""));
+            intent.putExtra("email", prefs.getString("email", ""));
+
+            startActivity(intent);
         });
 
         // Solicitar permisos si no están concedidos

@@ -4,23 +4,40 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Botón de Cerrar Sesión (arriba a la derecha) -->
-    <Button
-        android:id="@+id/btnLogout"
-        android:layout_width="wrap_content"
+    <!-- Barra superior con botones -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Cerrar Sesión"
-        android:layout_alignParentEnd="true"
-        android:layout_margin="16dp"
-        android:background="@android:color/holo_purple"
-        android:textColor="@android:color/white"
-        android:elevation="4dp"/>
+        android:orientation="horizontal"
+        android:layout_alignParentTop="true"
+        android:padding="16dp">
 
-    <!-- Mapa (debajo del botón) -->
+        <Button
+            android:id="@+id/btnVerPerfil"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ver Perfil"
+            android:layout_weight="1"
+            android:background="@android:color/holo_purple"
+            android:textColor="@android:color/white"/>
+
+        <Button
+            android:id="@+id/btnLogout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cerrar Sesión"
+            android:layout_weight="1"
+            android:background="@android:color/holo_purple"
+            android:textColor="@android:color/white"/>
+
+    </LinearLayout>
+
+    <!-- Mapa (debajo de la barra de botones) -->
     <org.osmdroid.views.MapView
         android:id="@+id/mapView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/btnLogout"/>
+        android:layout_below="@id/btnLogout"
+        android:layout_marginTop="80dp" />
 
 </RelativeLayout>

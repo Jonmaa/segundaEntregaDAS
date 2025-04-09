@@ -1,6 +1,7 @@
 package com.example.segundaentregadas;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -55,6 +56,16 @@ public class LoginActivity extends AppCompatActivity {
                             ApiResponse loginResponse = response.body();
                             if (loginResponse.isSuccess()) {
                                 //tvResult.setText("Bienvenido: " + loginResponse.getUser().getNombre());
+                                int userId = loginResponse.getUser().getId();
+                                String nombre = loginResponse.getUser().getNombre();
+
+
+                                SharedPreferences.Editor editor = getSharedPreferences("AppPrefs", MODE_PRIVATE).edit();
+                                editor.putInt("user_id", userId);  // Make sure userId comes from your login response
+                                editor.putString("nombre", nombre);
+                                editor.putString("email", email);
+
+                                editor.apply();
                                 startActivity(new Intent(LoginActivity.this, MapActivity.class));
                                 finish();
                             } else {
