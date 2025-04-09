@@ -3,6 +3,7 @@ package com.example.segundaentregadas;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.content.Intent;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -53,7 +54,15 @@ public class RegistroActivity extends AppCompatActivity {
                     public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
                         if (response.isSuccessful() && response.body() != null) {
                             ApiResponse apiResponse = response.body();
-                            tvResult.setText(apiResponse.isSuccess() ? "Registro exitoso" : "Error: " + apiResponse.getMessage());
+                            if (apiResponse.isSuccess()) {
+                                //tvResult.setText("Registro exitoso");
+                                Toast.makeText(RegistroActivity.this, "Registro exitoso", Toast.LENGTH_SHORT).show();
+                                startActivity(new Intent(RegistroActivity.this, LoginActivity.class));
+                                finish();
+                            } else {
+                                tvResult.setText("Error: " + apiResponse.getMessage());
+                            }
+                            //tvResult.setText(apiResponse.isSuccess() ? "Registro exitoso" : "Error: " + apiResponse.getMessage());
                         } else {
                             tvResult.setText("Error en el servidor");
                         }
