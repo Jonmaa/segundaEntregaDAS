@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/dialog_add_poi"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/etPoiName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nombre del lugar"
+        android:inputType="text"
+        android:maxLines="1" />
+
+    <EditText
+        android:id="@+id/etPoiDescription"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Descripción"
+        android:inputType="textMultiLine"
+        android:minLines="3" />
+
+    <Button
+        android:id="@+id/btnSelectImage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Seleccionar imagen" />
+
+    <ImageView
+        android:id="@+id/imgPreview"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginTop="8dp"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
+
+</LinearLayout>
