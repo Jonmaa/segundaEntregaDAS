@@ -28,13 +28,17 @@ import com.example.segundaentregadas.network.ApiClient;
 import com.example.segundaentregadas.network.ApiService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-
+import org.osmdroid.bonuspack.routing.OSRMRoadManager;
+import org.osmdroid.bonuspack.routing.Road;
+import org.osmdroid.bonuspack.routing.RoadManager;
 import org.osmdroid.api.IGeoPoint;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Overlay;
+import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
@@ -42,6 +46,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -356,15 +362,22 @@ public class MapActivity extends AppCompatActivity {
         marker.setTitle(title);
         marker.setSnippet(description);
 
-        try {
-            // Always use a consistent drawable resource that definitely exists
-            int drawableResource = R.drawable.map_marker_good;
+        // Add click listener
+        marker.setOnMarkerClickListener(new Marker.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker, MapView mapView) {
+                showMarkerOptionsDialog(marker);
+                return true;
+            }
+        });
 
+        try {
+            // Your existing icon code
+            int drawableResource = R.drawable.map_marker_good;
             android.graphics.drawable.Drawable originalIcon = getResources().getDrawable(drawableResource);
             android.graphics.drawable.BitmapDrawable bd = (android.graphics.drawable.BitmapDrawable) originalIcon;
             Bitmap bitmap = bd.getBitmap();
 
-            // Scale to make it smaller
             float scale = 0.1f;
             Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap,
                     (int)(bitmap.getWidth() * scale),
@@ -376,13 +389,116 @@ public class MapActivity extends AppCompatActivity {
 
             marker.setIcon(scaledIcon);
         } catch (Exception e) {
-            // If any error occurs with the custom icon, use default marker
             Log.e(TAG, "Error setting marker icon: " + e.getMessage());
-            // marker will use its default icon
         }
 
         mapView.getOverlays().add(marker);
-        mapView.invalidate(); // Refresh map
+        mapView.invalidate();
+    }
+
+    private void showMarkerOptionsDialog(Marker marker) {
+        new AlertDialog.Builder(this)
+                .setTitle(marker.getTitle())
+                .setMessage(marker.getSnippet())
+                .setPositiveButton("Cómo llegar", (dialog, which) -> {
+                    calculateAndShowRoute(marker.getPosition());
+                })
+                .setNegativeButton("Cerrar", null)
+                .show();
+    }
+
+    private void calculateAndShowRoute(GeoPoint destination) {
+        GeoPoint startPoint = locationOverlay.getMyLocation();
+        if (startPoint == null) {
+            Toast.makeText(this, "No se puede determinar tu ubicación actual", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Clear existing route lines
+        List<Overlay> toRemove = new ArrayList<>();
+        for (Overlay overlay : mapView.getOverlays()) {
+            if (overlay instanceof Polyline && !(overlay instanceof MyLocationNewOverlay)) {
+                toRemove.add(overlay);
+            }
+        }
+        mapView.getOverlays().removeAll(toRemove);
+
+        Toast.makeText(this, "Calculando ruta...", Toast.LENGTH_SHORT).show();
+
+        // Calculate route in background thread
+        new Thread(() -> {
+            RoadManager roadManager = new OSRMRoadManager(this, android.os.Build.MODEL);
+            ((OSRMRoadManager)roadManager).setMean(OSRMRoadManager.MEAN_BY_FOOT);
+
+            ArrayList<GeoPoint> waypoints = new ArrayList<>();
+            waypoints.add(startPoint);
+            waypoints.add(destination);
+
+            try {
+                Road road = roadManager.getRoad(waypoints);
+                Polyline roadOverlay = RoadManager.buildRoadOverlay(road);
+                roadOverlay.setColor(getResources().getColor(android.R.color.holo_blue_dark));
+                roadOverlay.setWidth(10);
+
+                runOnUiThread(() -> {
+                    mapView.getOverlays().add(roadOverlay);
+                    mapView.invalidate();
+
+                    // Format and display route information
+                    double distanceKm = road.mLength;
+                    // Adjust walking speed estimation (average walking speed is around 5 km/h)
+                    double durationMin = (road.mDuration / 60);
+
+                    String message = String.format("Distancia a pie: %.1f km, Tiempo: %.0f min",
+                            distanceKm, durationMin);
+                    Toast.makeText(MapActivity.this, message, Toast.LENGTH_LONG).show();
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    Toast.makeText(MapActivity.this,
+                            "Error al calcular la ruta: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                    Log.e("MapActivity", "Routing error", e);
+
+                    // Fallback to direct line if routing fails
+                    drawDirectLine(startPoint, destination);
+                });
+            }
+        }).start();
+    }
+
+    private void drawDirectLine(GeoPoint start, GeoPoint end) {
+        Polyline line = new Polyline();
+        List<GeoPoint> points = new ArrayList<>();
+        points.add(start);
+        points.add(end);
+        line.setPoints(points);
+        line.setColor(getResources().getColor(android.R.color.holo_red_light));
+        line.setWidth(5);
+        mapView.getOverlays().add(line);
+        mapView.invalidate();
+
+        // Calculate straight-line distance as fallback
+        double distanceKm = calculateDistance(start, end);
+        Toast.makeText(this, "Distancia directa: " + String.format("%.1f", distanceKm) + " km",
+                Toast.LENGTH_LONG).show();
+    }
+
+    private double calculateDistance(GeoPoint p1, GeoPoint p2) {
+        // Calculate distance using Haversine formula
+        double lat1 = p1.getLatitude();
+        double lon1 = p1.getLongitude();
+        double lat2 = p2.getLatitude();
+        double lon2 = p2.getLongitude();
+
+        double R = 6371; // Earth radius in km
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLon/2) * Math.sin(dLon/2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
     }
 
     private void requestPermissionsIfNecessary() {
