@@ -83,6 +83,11 @@ public class PerfilActivity extends AppCompatActivity {
                 requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_IMAGE_CAPTURE);
             }
         });
+
+        Button btnBack = findViewById(R.id.btnBack);
+        btnBack.setOnClickListener(v -> {
+            finish(); // This will close the activity and return to MapActivity
+        });
     }
 
     private void dispatchTakePictureIntent() {
