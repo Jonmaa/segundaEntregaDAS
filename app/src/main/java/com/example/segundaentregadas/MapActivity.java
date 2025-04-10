@@ -16,6 +16,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
@@ -362,6 +363,11 @@ public class MapActivity extends AppCompatActivity {
         marker.setTitle(title);
         marker.setSnippet(description);
 
+        // Store the image URL in the marker
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            marker.setRelatedObject(imageUrl);
+        }
+
         // Add click listener
         marker.setOnMarkerClickListener(new Marker.OnMarkerClickListener() {
             @Override
@@ -397,14 +403,43 @@ public class MapActivity extends AppCompatActivity {
     }
 
     private void showMarkerOptionsDialog(Marker marker) {
-        new AlertDialog.Builder(this)
-                .setTitle(marker.getTitle())
-                .setMessage(marker.getSnippet())
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        // Create a custom dialog view
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_marker_details, null);
+        TextView titleText = dialogView.findViewById(R.id.markerTitle);
+        TextView descriptionText = dialogView.findViewById(R.id.markerDescription);
+        ImageView imageView = dialogView.findViewById(R.id.markerImage);
+
+        // Set title and description
+        titleText.setText(marker.getTitle());
+        descriptionText.setText(marker.getSnippet());
+
+        // Get image URL from marker's related object (assuming it's stored in getRelatedObject())
+        String imageUrl = null;
+        if (marker.getRelatedObject() instanceof String) {
+            imageUrl = (String) marker.getRelatedObject();
+        }
+
+        // Load and display image if available
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            com.bumptech.glide.Glide.with(this)
+                    .load(imageUrl)
+                    .placeholder(R.drawable.no_image)
+                    .error(R.drawable.no_image)
+                    .into(imageView);
+            imageView.setVisibility(View.VISIBLE);
+        } else {
+            imageView.setVisibility(View.GONE);
+        }
+
+        builder.setView(dialogView)
                 .setPositiveButton("Cómo llegar", (dialog, which) -> {
                     calculateAndShowRoute(marker.getPosition());
                 })
-                .setNegativeButton("Cerrar", null)
-                .show();
+                .setNegativeButton("Cerrar", null);
+
+        builder.show();
     }
 
     private void calculateAndShowRoute(GeoPoint destination) {
