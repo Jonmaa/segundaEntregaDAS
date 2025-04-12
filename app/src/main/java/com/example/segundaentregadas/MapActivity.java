@@ -19,11 +19,13 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import com.example.segundaentregadas.workers.MarkerCheckWorker;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
-
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.Constraints;
+import androidx.work.NetworkType;
 import com.example.segundaentregadas.models.ApiResponse;
 import com.example.segundaentregadas.models.FotoResponse;
 import com.example.segundaentregadas.network.ApiClient;
@@ -43,7 +45,8 @@ import org.osmdroid.views.overlay.Overlay;
 import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
-
+import androidx.work.WorkManager;
+import androidx.work.PeriodicWorkRequest;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -51,7 +54,8 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.concurrent.TimeUnit;
+import androidx.work.ExistingPeriodicWorkPolicy;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -119,6 +123,8 @@ public class MapActivity extends AppCompatActivity {
 
         // Cargar todos los lugares desde el servidor
         cargarLugares();
+
+        scheduleMarkerChecker();
     }
 
     private void cargarLugares() {
@@ -576,6 +582,30 @@ public class MapActivity extends AppCompatActivity {
                 setupLocationOverlay(); // Reintentar si se conceden los permisos
             }
         }
+    }
+
+    private void scheduleMarkerChecker() {
+        // Define constraints: only run when device is connected to network
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+
+
+        PeriodicWorkRequest markerCheckRequest =
+                new PeriodicWorkRequest.Builder(
+                        MarkerCheckWorker.class,
+                        15, TimeUnit.MINUTES)
+                        .setConstraints(constraints)
+                        .build();
+
+        // Schedule the work
+        WorkManager.getInstance(this)
+                .enqueueUniquePeriodicWork(
+                        "marker_check_work",
+                        ExistingPeriodicWorkPolicy.REPLACE,
+                        markerCheckRequest);
+
+        // Log.d(TAG, "Scheduled marker check worker to run every 6 hours");
     }
 
     private void cerrarSesion() {
