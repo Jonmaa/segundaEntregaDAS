@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import com.bumptech.glide.Glide;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -47,6 +48,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -91,6 +93,7 @@ public class MapActivity extends AppCompatActivity {
                     .setPositiveButton("Sí", (dialog, which) -> cerrarSesion())
                     .setNegativeButton("No", null)
                     .show();
+
         });
 
         Button btnVerPerfil = findViewById(R.id.btnVerPerfil);
@@ -579,6 +582,16 @@ public class MapActivity extends AppCompatActivity {
         // Aquí puedes limpiar cualquier dato de sesión (ej: SharedPreferences)
         // Ejemplo:
         //getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().clear().apply();
+
+        SharedPreferences.Editor editor = getSharedPreferences("AppPrefs", MODE_PRIVATE).edit();
+        editor.clear();
+        editor.apply();
+
+        // Clear Glide's image cache
+        Glide.get(this).clearMemory();
+        new Thread(() -> {
+            Glide.get(this).clearDiskCache();
+        }).start();
 
         // Redirige a LoginActivity y cierra esta actividad
         Intent intent = new Intent(MapActivity.this, LoginActivity.class);

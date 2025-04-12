@@ -63,14 +63,29 @@ public class PerfilActivity extends AppCompatActivity {
         String email = prefs.getString("email", "");
         String fotoUrl = prefs.getString("foto_url", "");
 
+        // Add debug logging
+        Log.d("PerfilActivity", "User ID: " + userId);
+        Log.d("PerfilActivity", "Nombre: " + nombre);
+        Log.d("PerfilActivity", "Email: " + email);
+        Log.d("PerfilActivity", "Foto URL: " + fotoUrl);
+
         // Mostrar datos
         tvNombre.setText("Nombre: " + nombre);
         tvEmail.setText("Email: " + email);
 
+
+        // Clear Glide cache when showing a profile
+        Glide.get(this).clearMemory();
+        new Thread(() -> {
+            Glide.get(this).clearDiskCache();
+        }).start();
+
         // Cargar foto de perfil si existe
         if (!fotoUrl.isEmpty()) {
             Glide.with(this)
-                    .load(fotoUrl)
+                    .load(fotoUrl + "?t=" + System.currentTimeMillis())
+                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                    .skipMemoryCache(true)
                     .placeholder(R.drawable.default_profile)
                     .into(imgPerfil);
         }
@@ -176,19 +191,27 @@ public class PerfilActivity extends AppCompatActivity {
 
                             // Null check before using the URL
                             if (imageUrl != null && !imageUrl.isEmpty()) {
-                                // 1. Actualizar SharedPreferences
+                                // 1. Actualizar SharedPreferences con el nuevo URL
                                 SharedPreferences.Editor editor = getSharedPreferences("AppPrefs", MODE_PRIVATE).edit();
                                 editor.putString("foto_url", imageUrl);
                                 editor.apply();
 
-                                // 2. Mostrar imagen con Glide (con caché desactivada para forzar actualización)
-                                Glide.with(PerfilActivity.this)
-                                        .load(imageUrl + "?t=" + System.currentTimeMillis())
-                                        .diskCacheStrategy(DiskCacheStrategy.NONE)
-                                        .skipMemoryCache(true)
-                                        .into(imgPerfil);
+                                // 2. Limpiar la cache de Glide para esta imagen específica
+                                Glide.get(PerfilActivity.this).clearMemory();
+                                new Thread(() -> {
+                                    Glide.get(PerfilActivity.this).clearDiskCache();
+                                }).start();
 
-                                Toast.makeText(PerfilActivity.this, "Foto actualizada correctamente", Toast.LENGTH_SHORT).show();
+                                // 3. Cargar la imagen con un timestamp para evitar cache
+                                runOnUiThread(() -> {
+                                    Glide.with(PerfilActivity.this)
+                                            .load(imageUrl + "?t=" + System.currentTimeMillis())
+                                            .diskCacheStrategy(DiskCacheStrategy.NONE)
+                                            .skipMemoryCache(true)
+                                            .into(imgPerfil);
+
+                                    Toast.makeText(PerfilActivity.this, "Foto actualizada correctamente", Toast.LENGTH_SHORT).show();
+                                });
                             } else {
                                 Toast.makeText(PerfilActivity.this, "URL de imagen vacía o nula", Toast.LENGTH_LONG).show();
                             }
@@ -210,6 +233,7 @@ public class PerfilActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<FotoResponse> call, Throwable t) {
+                Log.e("PerfilActivity", "Network error", t);
                 runOnUiThread(() ->
                         Toast.makeText(PerfilActivity.this, "Error de red: " + t.getMessage(), Toast.LENGTH_LONG).show()
                 );

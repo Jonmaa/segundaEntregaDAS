@@ -5,6 +5,8 @@ public class ApiResponse {
     private boolean success;
     private String message;
     private User user; // Opcional: solo si el endpoint devuelve datos de usuario
+    private String foto_url;
+
 
     // Constructor (puede estar vacío si usas Gson)
     public ApiResponse() {}
@@ -32,5 +34,9 @@ public class ApiResponse {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public String getFotoUrl() {
+        return foto_url;
     }
 }

@@ -55,17 +55,24 @@ public class LoginActivity extends AppCompatActivity {
                         if (response.isSuccessful() && response.body() != null) {
                             ApiResponse loginResponse = response.body();
                             if (loginResponse.isSuccess()) {
-                                //tvResult.setText("Bienvenido: " + loginResponse.getUser().getNombre());
                                 int userId = loginResponse.getUser().getId();
                                 String nombre = loginResponse.getUser().getNombre();
+                                String email = loginResponse.getUser().getEmail();
+                                String fotoUrl = loginResponse.getUser().getFotoUrl();
 
+                                // Log values for debugging
+                                Log.d("LoginActivity", "User ID: " + userId);
+                                Log.d("LoginActivity", "Nombre: " + nombre);
+                                Log.d("LoginActivity", "Email: " + email);
+                                Log.d("LoginActivity", "Foto URL: " + fotoUrl);
 
                                 SharedPreferences.Editor editor = getSharedPreferences("AppPrefs", MODE_PRIVATE).edit();
                                 editor.putInt("user_id", userId);  // Make sure userId comes from your login response
                                 editor.putString("nombre", nombre);
                                 editor.putString("email", email);
-
+                                editor.putString("foto_url", fotoUrl);
                                 editor.apply();
+
                                 startActivity(new Intent(LoginActivity.this, MapActivity.class));
                                 finish();
                             } else {
