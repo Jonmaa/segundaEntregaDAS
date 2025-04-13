@@ -55,14 +55,12 @@ public class RegistroActivity extends AppCompatActivity {
                         if (response.isSuccessful() && response.body() != null) {
                             ApiResponse apiResponse = response.body();
                             if (apiResponse.isSuccess()) {
-                                //tvResult.setText("Registro exitoso");
                                 Toast.makeText(RegistroActivity.this, "Registro exitoso", Toast.LENGTH_SHORT).show();
                                 startActivity(new Intent(RegistroActivity.this, LoginActivity.class));
                                 finish();
                             } else {
                                 tvResult.setText("Error: " + apiResponse.getMessage());
                             }
-                            //tvResult.setText(apiResponse.isSuccess() ? "Registro exitoso" : "Error: " + apiResponse.getMessage());
                         } else {
                             tvResult.setText("Error en el servidor");
                         }

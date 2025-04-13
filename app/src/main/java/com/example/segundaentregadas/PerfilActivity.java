@@ -50,31 +50,24 @@ public class PerfilActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_perfil);
 
-        // Inicializar vistas
         imgPerfil = findViewById(R.id.imgPerfil);
         tvNombre = findViewById(R.id.tvNombre);
         tvEmail = findViewById(R.id.tvEmail);
         btnCambiarFoto = findViewById(R.id.btnCambiarFoto);
 
-        // Obtener datos del usuario
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         userId = prefs.getInt("user_id", 0);
         String nombre = prefs.getString("nombre", "");
         String email = prefs.getString("email", "");
         String fotoUrl = prefs.getString("foto_url", "");
-
-        // Add debug logging
         Log.d("PerfilActivity", "User ID: " + userId);
         Log.d("PerfilActivity", "Nombre: " + nombre);
         Log.d("PerfilActivity", "Email: " + email);
         Log.d("PerfilActivity", "Foto URL: " + fotoUrl);
 
-        // Mostrar datos
         tvNombre.setText("Nombre: " + nombre);
         tvEmail.setText("Email: " + email);
 
-
-        // Clear Glide cache when showing a profile
         Glide.get(this).clearMemory();
         new Thread(() -> {
             Glide.get(this).clearDiskCache();
@@ -90,7 +83,6 @@ public class PerfilActivity extends AppCompatActivity {
                     .into(imgPerfil);
         }
 
-        // Configurar botón de cambio de foto
         btnCambiarFoto.setOnClickListener(v -> {
             if (checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                 dispatchTakePictureIntent();
@@ -101,7 +93,7 @@ public class PerfilActivity extends AppCompatActivity {
 
         Button btnBack = findViewById(R.id.btnBack);
         btnBack.setOnClickListener(v -> {
-            finish(); // This will close the activity and return to MapActivity
+            finish();
         });
     }
 
@@ -147,7 +139,6 @@ public class PerfilActivity extends AppCompatActivity {
                     .load(currentPhotoPath)
                     .into(imgPerfil);
 
-            // Subir al servidor
             uploadImageToServer();
         }
     }
@@ -155,12 +146,12 @@ public class PerfilActivity extends AppCompatActivity {
     private void uploadImageToServer() {
         File file = new File(currentPhotoPath);
 
-        // Agregar logs de depuración
         Log.d("PerfilActivity", "Path: " + currentPhotoPath);
         Log.d("PerfilActivity", "File exists: " + file.exists());
         Log.d("PerfilActivity", "File size: " + file.length());
         Log.d("PerfilActivity", "User ID: " + userId);
 
+        // Comprimir para que no de problemas de tamaño
         File compressedFile = compressImage(file);
 
         if (!compressedFile.exists()) {
@@ -189,20 +180,19 @@ public class PerfilActivity extends AppCompatActivity {
                         if (fotoResponse.isSuccess()) {
                             String imageUrl = fotoResponse.getUrl();
 
-                            // Null check before using the URL
                             if (imageUrl != null && !imageUrl.isEmpty()) {
-                                // 1. Actualizar SharedPreferences con el nuevo URL
+                                // Actualizar SharedPreferences
                                 SharedPreferences.Editor editor = getSharedPreferences("AppPrefs", MODE_PRIVATE).edit();
                                 editor.putString("foto_url", imageUrl);
                                 editor.apply();
 
-                                // 2. Limpiar la cache de Glide para esta imagen específica
+                                // Limpiar la cache de Glide para esta imagen específica
                                 Glide.get(PerfilActivity.this).clearMemory();
                                 new Thread(() -> {
                                     Glide.get(PerfilActivity.this).clearDiskCache();
                                 }).start();
 
-                                // 3. Cargar la imagen con un timestamp para evitar cache
+                                // Cargar la imagen con un timestamp para evitar cache
                                 runOnUiThread(() -> {
                                     Glide.with(PerfilActivity.this)
                                             .load(imageUrl + "?t=" + System.currentTimeMillis())
@@ -244,27 +234,24 @@ public class PerfilActivity extends AppCompatActivity {
 
     private File compressImage(File originalFile) {
         try {
-            // Create bitmap from file
+            // Crear bitmap
             BitmapFactory.Options bmOptions = new BitmapFactory.Options();
             bmOptions.inJustDecodeBounds = true;
             BitmapFactory.decodeFile(originalFile.getAbsolutePath(), bmOptions);
 
-            // Calculate target size (resize if too large)
             int photoWidth = bmOptions.outWidth;
             int photoHeight = bmOptions.outHeight;
             int scaleFactor = Math.max(1, Math.min(photoWidth/1200, photoHeight/1200));
 
-            // Decode the image file into a smaller bitmap
+            // Decodificar el bitmap con el tamaño reducido
             bmOptions.inJustDecodeBounds = false;
             bmOptions.inSampleSize = scaleFactor;
 
             Bitmap bitmap = BitmapFactory.decodeFile(originalFile.getAbsolutePath(), bmOptions);
 
-            // Create output compressed file
             File compressedFile = new File(getCacheDir(), "compressed_" + originalFile.getName());
             FileOutputStream fos = new FileOutputStream(compressedFile);
 
-            // Compress to JPEG with 70% quality
             bitmap.compress(Bitmap.CompressFormat.JPEG, 70, fos);
             fos.flush();
             fos.close();
@@ -273,17 +260,11 @@ public class PerfilActivity extends AppCompatActivity {
             Log.d("PerfilActivity", "Compression: Original=" + originalFile.length() + " bytes, Compressed=" + compressedFile.length() + " bytes");
 
             return compressedFile;
+
         } catch (Exception e) {
             Log.e("PerfilActivity", "Image compression failed", e);
             return originalFile; // Return original if compression fails
         }
-    }
-
-    private void showError(String message) {
-        runOnUiThread(() -> {
-            Toast.makeText(PerfilActivity.this, message, Toast.LENGTH_LONG).show();
-            Log.e("PerfilActivity", message);
-        });
     }
 
     @Override

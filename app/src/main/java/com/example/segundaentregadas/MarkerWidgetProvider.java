@@ -46,7 +46,6 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
             actualizarWidget(context, appWidgetManager, appWidgetIds);
         }
 
-        // Configurar la alarma para la próxima actualización
         setUpdateAlarm(context);
     }
 
@@ -61,16 +60,13 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
             ComponentName thisWidget = new ComponentName(context, MarkerWidgetProvider.class);
             int[] appWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget);
 
-            // Avanzar al siguiente marcador
             if (!marcadores.isEmpty()) {
                 currentMarkerIndex = (currentMarkerIndex + 1) % marcadores.size();
                 actualizarWidget(context, appWidgetManager, appWidgetIds);
             } else {
-                // Si no hay marcadores, intentar cargarlos
                 cargarMarcadores(context, appWidgetManager, appWidgetIds);
             }
 
-            // Configurar la alarma para la próxima actualización
             setUpdateAlarm(context);
         }
     }
@@ -78,17 +74,14 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
     private void cargarMarcadores(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         Log.d(TAG, "Cargando marcadores desde la API");
 
-        // Verificar si el usuario está logueado
         SharedPreferences prefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
         int userId = prefs.getInt("user_id", 0);
 
         if (userId == 0) {
-            // Usuario no logueado
             showErrorMessage(context, appWidgetManager, appWidgetIds, "Inicie sesión para ver marcadores");
             return;
         }
 
-        // Cargar marcadores desde la API
         ApiService apiService = ApiClient.getClient().create(ApiService.class);
         Call<JsonArray> call = apiService.obtenerLugares();
 
@@ -144,7 +137,6 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
             return;
         }
 
-        // Obtener marcador actual
         MarkerInfo marker = marcadores.get(currentMarkerIndex);
         Log.d(TAG, "Mostrando marcador " + (currentMarkerIndex + 1) + "/" + marcadores.size() + ": " + marker.getNombre());
 
@@ -153,7 +145,6 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.widget_description, marker.getDescripcion());
         views.setTextViewText(R.id.widget_location, "Lat: " + marker.getLatitud() + ", Lng: " + marker.getLongitud());
 
-        // Configurar intent para abrir la app al hacer clic
         Intent intent = new Intent(context, MapActivity.class);
         PendingIntent pendingIntent;
 
@@ -169,7 +160,6 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.widget_description, pendingIntent);
         views.setOnClickPendingIntent(R.id.widget_location, pendingIntent);
 
-        // Cargar imagen si existe
         if (marker.getImagenUrl() != null && !marker.getImagenUrl().isEmpty()) {
             try {
                 // Cargar imagen con Glide fuera del UI thread
@@ -199,7 +189,6 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
     }
 
     private void setUpdateAlarm(Context context) {
-        // Configurar alarma para actualizar widget cada 15 segundos
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(context, MarkerWidgetProvider.class);
         intent.setAction(ACTION_UPDATE_WIDGET);
@@ -213,10 +202,8 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
                     PendingIntent.FLAG_UPDATE_CURRENT);
         }
 
-        // Cancelar alarma anterior si existe
         alarmManager.cancel(pendingIntent);
 
-        // Programar próxima actualización en 15 segundos
         alarmManager.set(AlarmManager.ELAPSED_REALTIME,
                 SystemClock.elapsedRealtime() + 15000, pendingIntent);
 
@@ -251,7 +238,6 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
     public void onDisabled(Context context) {
         super.onDisabled(context);
 
-        // Cancelar alarma cuando se elimina el último widget
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(context, MarkerWidgetProvider.class);
         intent.setAction(ACTION_UPDATE_WIDGET);

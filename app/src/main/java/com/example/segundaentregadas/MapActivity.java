@@ -93,11 +93,10 @@ public class MapActivity extends AppCompatActivity {
         Configuration.getInstance().setUserAgentValue(getPackageName());
 
         mapView = findViewById(R.id.mapView);
-        mapView.setTileSource(TileSourceFactory.MAPNIK); // Estilo de mapa
+        mapView.setTileSource(TileSourceFactory.MAPNIK);
         mapView.setBuiltInZoomControls(true);
         mapView.setMultiTouchControls(true);
 
-        // Botón de Cerrar Sesión
         btnLogout = findViewById(R.id.btnLogout);
         btnLogout.setOnClickListener(v -> {
             new AlertDialog.Builder(MapActivity.this)
@@ -113,7 +112,6 @@ public class MapActivity extends AppCompatActivity {
         btnVerPerfil.setOnClickListener(v -> {
             Intent intent = new Intent(MapActivity.this, PerfilActivity.class);
 
-            // Pasa los datos del usuario (ejemplo usando SharedPreferences)
             SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
             intent.putExtra("nombre", prefs.getString("nombre", ""));
             intent.putExtra("email", prefs.getString("email", ""));
@@ -121,24 +119,18 @@ public class MapActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // Solicitar permisos si no están concedidos
         requestPermissionsIfNecessary();
 
-        // Configurar la ubicación del usuario
         setupLocationOverlay();
 
-        // Configurar listeners del mapa
         setupMapListeners();
 
-        // Cargar todos los lugares desde el servidor
         cargarLugares();
 
         scheduleMarkerChecker();
 
-        // Start the foreground service
         startMarkerMonitorService();
 
-        // Register for broadcasts
         registerMarkerUpdateReceiver();
     }
 
@@ -178,10 +170,9 @@ public class MapActivity extends AppCompatActivity {
     }
 
     private void setupMapListeners() {
-        // Replace the current implementation with this
         mapView.getOverlays().add(new org.osmdroid.views.overlay.gestures.RotationGestureOverlay(mapView));
 
-        // Add this custom overlay for long press detection
+        // Detectar toque largo para añadir un nuevo punto de interés
         mapView.getOverlays().add(new org.osmdroid.views.overlay.Overlay() {
             @Override
             public boolean onLongPress(MotionEvent e, MapView mapView) {
@@ -192,7 +183,7 @@ public class MapActivity extends AppCompatActivity {
             }
         });
 
-        // This will force the map to recognize the overlay we just added
+        // Fuerza el mapa a reconocer el overlay de toque largo
         mapView.invalidate();
     }
 
@@ -200,7 +191,6 @@ public class MapActivity extends AppCompatActivity {
         selectedLocation = location;
         selectedImageUri = null;
 
-        // Create dialog layout
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_poi, null);
         EditText etName = dialogView.findViewById(R.id.etPoiName);
         EditText etDescription = dialogView.findViewById(R.id.etPoiDescription);
@@ -208,7 +198,6 @@ public class MapActivity extends AppCompatActivity {
         final ImageView imgPreview = dialogView.findViewById(R.id.imgPreview);
 
         btnSelectImage.setOnClickListener(v -> {
-            // Open gallery to select image
             Intent intent = new Intent(Intent.ACTION_PICK);
             intent.setType("image/*");
             startActivityForResult(intent, REQUEST_IMAGE_PICK);
@@ -217,13 +206,12 @@ public class MapActivity extends AppCompatActivity {
         currentDialog = new AlertDialog.Builder(this)
                 .setTitle("Añadir punto de interés")
                 .setView(dialogView)
-                .setPositiveButton("Guardar", null) // Set null initially
+                .setPositiveButton("Guardar", null)
                 .setNegativeButton("Cancelar", null)
                 .create();
 
         currentDialog.show();
 
-        // Override the positive button
         currentDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String name = etName.getText().toString().trim();
             String description = etDescription.getText().toString().trim();
@@ -519,7 +507,6 @@ public class MapActivity extends AppCompatActivity {
                             Toast.LENGTH_LONG).show();
                     Log.e("MapActivity", "Routing error", e);
 
-                    // Fallback to direct line if routing fails
                     drawDirectLine(startPoint, destination);
                 });
             }
@@ -690,12 +677,5 @@ public class MapActivity extends AppCompatActivity {
         }
 
         super.onDestroy();
-    }
-
-    // Add a method to handle manual marker refresh for testing
-    private void refreshMarkersManually() {
-        Intent intent = new Intent("com.example.segundaentregadas.ACTION_REQUEST_REFRESH");
-        sendBroadcast(intent);
-        Toast.makeText(this, "Refreshing markers...", Toast.LENGTH_SHORT).show();
     }
 }
