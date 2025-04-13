@@ -1,5 +1,12 @@
 package com.example.segundaentregadas;
 
+import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import com.example.segundaentregadas.services.MarkerMonitorService;
+import com.example.segundaentregadas.receivers.MarkerUpdateReceiver;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -8,6 +15,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -74,6 +82,7 @@ public class MapActivity extends AppCompatActivity {
     private GeoPoint selectedLocation;
     private Uri selectedImageUri;
     private static final String TAG = "MapActivity";
+    private BroadcastReceiver markerUpdateReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,6 +134,12 @@ public class MapActivity extends AppCompatActivity {
         cargarLugares();
 
         scheduleMarkerChecker();
+
+        // Start the foreground service
+        startMarkerMonitorService();
+
+        // Register for broadcasts
+        registerMarkerUpdateReceiver();
     }
 
     private void cargarLugares() {
@@ -640,5 +655,47 @@ public class MapActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         mapView.onPause(); // Necesario para osmdroid
+    }
+
+    private void startMarkerMonitorService() {
+        Intent serviceIntent = new Intent(this, MarkerMonitorService.class);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent);
+        } else {
+            startService(serviceIntent);
+        }
+
+        Log.d(TAG, "Started marker monitor service");
+    }
+
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    private void registerMarkerUpdateReceiver() {
+        markerUpdateReceiver = new MarkerUpdateReceiver();
+        IntentFilter filter = new IntentFilter(MarkerMonitorService.ACTION_MARKER_UPDATE);
+
+        // Fix: Add the RECEIVER_EXPORTED flag (for Android 14+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(markerUpdateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(markerUpdateReceiver, filter);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        // Unregister receiver to prevent memory leaks
+        if (markerUpdateReceiver != null) {
+            unregisterReceiver(markerUpdateReceiver);
+        }
+
+        super.onDestroy();
+    }
+
+    // Add a method to handle manual marker refresh for testing
+    private void refreshMarkersManually() {
+        Intent intent = new Intent("com.example.segundaentregadas.ACTION_REQUEST_REFRESH");
+        sendBroadcast(intent);
+        Toast.makeText(this, "Refreshing markers...", Toast.LENGTH_SHORT).show();
     }
 }

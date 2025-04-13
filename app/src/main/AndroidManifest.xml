@@ -11,6 +11,9 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-feature android:name="android.hardware.camera" android:required="true"/>
 
     <uses-feature android:name="android.hardware.location.gps" />
@@ -48,6 +51,26 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/marker_widget_info" />
         </receiver>
+        <receiver
+            android:name=".receivers.MarkerUpdateReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.segundaentregadas.ACTION_MARKER_UPDATE" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".receivers.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <service
+            android:name=".services.MarkerMonitorService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
         <activity
             android:name=".PerfilActivity"
             android:exported="false" />
