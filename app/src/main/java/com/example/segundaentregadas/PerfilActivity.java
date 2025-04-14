@@ -3,6 +3,7 @@ package com.example.segundaentregadas;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -234,20 +235,23 @@ public class PerfilActivity extends AppCompatActivity {
 
     private File compressImage(File originalFile) {
         try {
-            // Crear bitmap
+            // First, correct the rotation if needed
+            File rotatedFile = rotateImageIfNeeded(originalFile);
+
+            // Create bitmap
             BitmapFactory.Options bmOptions = new BitmapFactory.Options();
             bmOptions.inJustDecodeBounds = true;
-            BitmapFactory.decodeFile(originalFile.getAbsolutePath(), bmOptions);
+            BitmapFactory.decodeFile(rotatedFile.getAbsolutePath(), bmOptions);
 
             int photoWidth = bmOptions.outWidth;
             int photoHeight = bmOptions.outHeight;
             int scaleFactor = Math.max(1, Math.min(photoWidth/1200, photoHeight/1200));
 
-            // Decodificar el bitmap con el tamaño reducido
+            // Decode the bitmap with reduced size
             bmOptions.inJustDecodeBounds = false;
             bmOptions.inSampleSize = scaleFactor;
 
-            Bitmap bitmap = BitmapFactory.decodeFile(originalFile.getAbsolutePath(), bmOptions);
+            Bitmap bitmap = BitmapFactory.decodeFile(rotatedFile.getAbsolutePath(), bmOptions);
 
             File compressedFile = new File(getCacheDir(), "compressed_" + originalFile.getName());
             FileOutputStream fos = new FileOutputStream(compressedFile);
@@ -264,6 +268,56 @@ public class PerfilActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e("PerfilActivity", "Image compression failed", e);
             return originalFile; // Return original if compression fails
+        }
+    }
+
+    private File rotateImageIfNeeded(File imageFile) {
+        try {
+            // Get bitmap from file
+            Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+
+            // Get the orientation from EXIF data
+            android.media.ExifInterface exif = new android.media.ExifInterface(imageFile.getAbsolutePath());
+            int orientation = exif.getAttributeInt(
+                    android.media.ExifInterface.TAG_ORIENTATION,
+                    android.media.ExifInterface.ORIENTATION_NORMAL);
+
+            // Rotate bitmap if needed
+            int rotationAngle = 0;
+            switch (orientation) {
+                case android.media.ExifInterface.ORIENTATION_ROTATE_90:
+                    rotationAngle = 90;
+                    break;
+                case android.media.ExifInterface.ORIENTATION_ROTATE_180:
+                    rotationAngle = 180;
+                    break;
+                case android.media.ExifInterface.ORIENTATION_ROTATE_270:
+                    rotationAngle = 270;
+                    break;
+            }
+
+            // If rotation is needed, create a new rotated bitmap
+            if (rotationAngle != 0) {
+                Matrix matrix = new Matrix();
+                matrix.postRotate(rotationAngle);
+                Bitmap rotatedBitmap = Bitmap.createBitmap(
+                        bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(),
+                        matrix, true);
+
+                // Save rotated bitmap to a new file
+                File rotatedFile = new File(getCacheDir(), "rotated_" + imageFile.getName());
+                FileOutputStream fos = new FileOutputStream(rotatedFile);
+                rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+                fos.flush();
+                fos.close();
+
+                return rotatedFile;
+            }
+
+            return imageFile;
+        } catch (Exception e) {
+            Log.e("PerfilActivity", "Error rotating image", e);
+            return imageFile; // Return original if rotation fails
         }
     }
 
