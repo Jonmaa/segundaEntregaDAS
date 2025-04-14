@@ -41,4 +41,7 @@ public interface ApiService {
 
     @GET("lugares.php")
     Call<JsonArray> obtenerLugares();
+
+    @POST("actualizar_usuario.php")
+    Call<ApiResponse> actualizarUsuario(@Body JsonObject userData);
 }

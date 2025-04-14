@@ -1,7 +1,9 @@
 package com.example.segundaentregadas;
 
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -72,6 +74,15 @@ public class LoginActivity extends AppCompatActivity {
                                 editor.putString("email", email);
                                 editor.putString("foto_url", fotoUrl);
                                 editor.apply();
+
+                                // After successful login, also store user data in ContentProvider
+                                ContentValues values = new ContentValues();
+                                values.put("_id", userId);
+                                values.put("nombre", nombre);
+                                values.put("email", email);
+                                values.put("foto_url", fotoUrl);
+
+                                getContentResolver().insert(Uri.parse("content://com.example.segundaentregadas.userprovider/users"), values);
 
                                 startActivity(new Intent(LoginActivity.this, MapActivity.class));
                                 finish();

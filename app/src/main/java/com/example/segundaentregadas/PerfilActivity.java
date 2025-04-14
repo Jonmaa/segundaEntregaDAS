@@ -1,5 +1,6 @@
 package com.example.segundaentregadas;
 
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -21,6 +22,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.example.segundaentregadas.models.ApiResponse;
 import com.example.segundaentregadas.models.FotoResponse;
 import com.example.segundaentregadas.network.ApiClient;
 import com.example.segundaentregadas.network.ApiService;
@@ -37,6 +39,13 @@ import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
+import android.text.InputType;
+import android.widget.Button;
+import android.widget.EditText;
+import androidx.appcompat.app.AlertDialog;
+import com.google.gson.JsonObject;
 
 public class PerfilActivity extends AppCompatActivity {
     private static final int REQUEST_IMAGE_CAPTURE = 1;
@@ -45,6 +54,7 @@ public class PerfilActivity extends AppCompatActivity {
     private TextView tvNombre, tvEmail;
     private Button btnCambiarFoto;
     private int userId;
+    private Button btnEditarNombre;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,6 +106,12 @@ public class PerfilActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> {
             finish();
         });
+
+        btnEditarNombre = findViewById(R.id.btnEditarNombre);
+
+        btnEditarNombre.setOnClickListener(v -> {
+            showEditNameDialog();
+        });
     }
 
     private void dispatchTakePictureIntent() {
@@ -116,6 +132,60 @@ public class PerfilActivity extends AppCompatActivity {
                 startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
             }
         }
+    }
+
+    private void showEditNameDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Cambiar nombre");
+
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        input.setText(tvNombre.getText().toString().replace("Nombre: ", ""));
+        builder.setView(input);
+
+        builder.setPositiveButton("Guardar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String newName = input.getText().toString().trim();
+                if (!newName.isEmpty()) {
+                    updateUserName(newName);
+                }
+            }
+        });
+
+        builder.setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
+    }
+
+    private void updateUserName(String newName) {
+        // Local update via ContentProvider
+        ContentValues values = new ContentValues();
+        values.put("_id", userId);
+        values.put("nombre", newName);
+
+        // Update local database through ContentProvider
+        getContentResolver().update(
+                Uri.parse("content://com.example.segundaentregadas.userprovider/users/" + userId),
+                values,
+                null,
+                null
+        );
+
+        // Update SharedPreferences
+        SharedPreferences.Editor editor = getSharedPreferences("AppPrefs", MODE_PRIVATE).edit();
+        editor.putString("nombre", newName);
+        editor.apply();
+
+        // Update UI
+        tvNombre.setText("Nombre: " + newName);
+
+        Toast.makeText(PerfilActivity.this, "Nombre actualizado correctamente", Toast.LENGTH_SHORT).show();
     }
 
     private File createImageFile() throws IOException {

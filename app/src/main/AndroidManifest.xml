@@ -40,6 +40,10 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+        <provider
+            android:name=".providers.UserProvider"
+            android:authorities="com.example.segundaentregadas.userprovider"
+            android:exported="false" />
         <receiver
             android:name=".MarkerWidgetProvider"
             android:exported="true">
