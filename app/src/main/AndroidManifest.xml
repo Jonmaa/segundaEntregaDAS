@@ -45,7 +45,7 @@
             android:authorities="com.example.segundaentregadas.userprovider"
             android:exported="false" />
         <receiver
-            android:name=".MarkerWidgetProvider"
+            android:name=".providers.MarkerWidgetProvider"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

@@ -1,4 +1,4 @@
-package com.example.segundaentregadas;
+package com.example.segundaentregadas.providers;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -17,6 +17,8 @@ import android.widget.RemoteViews;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.AppWidgetTarget;
 import com.bumptech.glide.request.transition.Transition;
+import com.example.segundaentregadas.MapActivity;
+import com.example.segundaentregadas.R;
 import com.example.segundaentregadas.network.ApiClient;
 import com.example.segundaentregadas.network.ApiService;
 import com.google.gson.JsonArray;

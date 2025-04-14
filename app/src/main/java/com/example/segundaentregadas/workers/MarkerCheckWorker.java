@@ -6,6 +6,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.util.Log;
 
@@ -101,13 +103,21 @@ public class MarkerCheckWorker extends Worker {
         PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        String title = "Nuevos marcadores";
+        // Get the total marker count
+        SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        Set<String> allMarkerIds = prefs.getStringSet(PREF_MARKER_IDS, new HashSet<>());
+        int totalMarkerCount = allMarkerIds.size();
+
+        String title = "Total de marcadores";
         String message = newMarkerCount == 1
-                ? "Se ha añadido 1 marcador nuevo"
-                : "Se han añadido " + newMarkerCount + " marcadores nuevos";
+                ? "Se ha añadido 1 marcador nuevo. Total: " + totalMarkerCount + " marcadores"
+                : "Se han añadido " + newMarkerCount + " marcadores nuevos. Total: " + totalMarkerCount + " marcadores";
+
+        Bitmap largeIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.icon);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.map_marker_good)
+                .setLargeIcon(largeIcon)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
