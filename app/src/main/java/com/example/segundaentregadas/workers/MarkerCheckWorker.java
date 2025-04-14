@@ -41,11 +41,7 @@ public class MarkerCheckWorker extends Worker {
 
     @Override
     public Result doWork() {
-        Log.d(TAG, "MarkerCheckWorker executing");
-
-        // Check for new markers and show notification if needed
         checkForNewMarkers();
-
         return Result.success();
     }
 
@@ -54,11 +50,9 @@ public class MarkerCheckWorker extends Worker {
         ApiService apiService = ApiClient.getClient().create(ApiService.class);
 
         try {
-            // Get stored marker IDs from previous check
             SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
             Set<String> savedMarkerIds = prefs.getStringSet(PREF_MARKER_IDS, new HashSet<>());
 
-            // Make a synchronous API call
             Call<JsonArray> call = apiService.obtenerLugares();
             Response<JsonArray> response = call.execute();
 
@@ -67,7 +61,6 @@ public class MarkerCheckWorker extends Worker {
                 Set<String> currentMarkerIds = new HashSet<>();
                 Set<String> newMarkerIds = new HashSet<>();
 
-                // Extract marker IDs from response
                 for (JsonElement element : markers) {
                     if (element.isJsonObject()) {
                         JsonObject marker = element.getAsJsonObject();
@@ -75,7 +68,6 @@ public class MarkerCheckWorker extends Worker {
                             String markerId = marker.get("id").getAsString();
                             currentMarkerIds.add(markerId);
 
-                            // Check if this is a new marker
                             if (!savedMarkerIds.contains(markerId)) {
                                 newMarkerIds.add(markerId);
                             }
@@ -86,10 +78,8 @@ public class MarkerCheckWorker extends Worker {
                 int newMarkerCount = newMarkerIds.size();
                 Log.d(TAG, "Found " + currentMarkerIds.size() + " total markers, " + newMarkerCount + " new");
 
-                // Save current marker IDs for next comparison
                 prefs.edit().putStringSet(PREF_MARKER_IDS, currentMarkerIds).apply();
 
-                // Show notification only if there are new markers
                 if (newMarkerCount > 0) {
                     showNewMarkersNotification(newMarkerCount);
                 }
@@ -104,22 +94,18 @@ public class MarkerCheckWorker extends Worker {
     private void showNewMarkersNotification(int newMarkerCount) {
         Context context = getApplicationContext();
 
-        // Create notification channel
         createNotificationChannel();
 
-        // Create intent to open the app when notification is tapped
         Intent intent = new Intent(context, MapActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        // Format message based on count
         String title = "Nuevos marcadores";
         String message = newMarkerCount == 1
                 ? "Se ha añadido 1 marcador nuevo"
                 : "Se han añadido " + newMarkerCount + " marcadores nuevos";
 
-        // Build notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.map_marker_good)
                 .setContentTitle(title)
@@ -128,12 +114,9 @@ public class MarkerCheckWorker extends Worker {
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
 
-        // Show notification
         NotificationManager notificationManager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(NOTIFICATION_ID, builder.build());
-
-        Log.d(TAG, "Notification shown: " + message);
     }
 
     private void createNotificationChannel() {

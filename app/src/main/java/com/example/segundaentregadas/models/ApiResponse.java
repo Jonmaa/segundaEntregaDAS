@@ -4,14 +4,12 @@ package com.example.segundaentregadas.models;
 public class ApiResponse {
     private boolean success;
     private String message;
-    private User user; // Opcional: solo si el endpoint devuelve datos de usuario
+    private User user;
     private String foto_url;
 
 
-    // Constructor (puede estar vacío si usas Gson)
     public ApiResponse() {}
 
-    // Getters y Setters (obligatorios para Retrofit)
     public boolean isSuccess() {
         return success;
     }

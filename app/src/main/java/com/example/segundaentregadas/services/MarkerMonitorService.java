@@ -146,7 +146,6 @@ public class MarkerMonitorService extends Service {
     }
 
     private Notification createNotification(String title, String content) {
-        // Create intent to open app when notification is tapped
         Intent intent = new Intent(this, MapActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
@@ -165,7 +164,7 @@ public class MarkerMonitorService extends Service {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
                     "Canal de Monitoreo de Marcadores",
-                    NotificationManager.IMPORTANCE_LOW); // Low importance to be less intrusive
+                    NotificationManager.IMPORTANCE_LOW);
 
             channel.setDescription("Usado para el servicio de monitoreo de marcadores");
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
