@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/linearLayout2"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#EDCEF8">
 
     <EditText
         android:id="@+id/etNombre"
@@ -31,7 +32,7 @@
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/etNombre"
-        android:background="#EDCEF8"/>
+        />
 
     <EditText
         android:id="@+id/etPassword"
