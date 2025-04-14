@@ -13,6 +13,9 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -150,10 +153,13 @@ public class MarkerMonitorService extends Service {
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
+        Bitmap largeIcon = BitmapFactory.decodeResource(getResources(), R.drawable.icon);
+
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(title)
                 .setContentText(content)
                 .setSmallIcon(R.drawable.map_marker_good)
+                .setLargeIcon(largeIcon)
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .build();
