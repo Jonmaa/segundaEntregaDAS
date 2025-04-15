@@ -35,6 +35,7 @@
         <!-- Datos del usuario -->
         <TextView
             android:id="@+id/tvNombre"
+            android:textColor="@color/black"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="18sp"
@@ -42,6 +43,7 @@
 
         <TextView
             android:id="@+id/tvEmail"
+            android:textColor="@color/black"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="16sp"
