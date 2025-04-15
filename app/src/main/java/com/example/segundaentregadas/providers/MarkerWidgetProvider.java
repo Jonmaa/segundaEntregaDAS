@@ -41,7 +41,6 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         Log.d(TAG, "onUpdate called for " + appWidgetIds.length + " widgets");
 
-        // Si no hay marcadores, cargarlos desde la API
         if (marcadores.isEmpty()) {
             cargarMarcadores(context, appWidgetManager, appWidgetIds);
         } else {
@@ -76,6 +75,7 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
     private void cargarMarcadores(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         Log.d(TAG, "Cargando marcadores desde la API");
 
+        // Comprobar si hay una sesión iniciada, si no lo está no se cargan los marcadores
         SharedPreferences prefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
         int userId = prefs.getInt("user_id", 0);
 
@@ -84,6 +84,7 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
             return;
         }
 
+        // Cargar marcadores desde la API
         ApiService apiService = ApiClient.getClient().create(ApiService.class);
         Call<JsonArray> call = apiService.obtenerLugares();
 
@@ -162,9 +163,10 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.widget_description, pendingIntent);
         views.setOnClickPendingIntent(R.id.widget_location, pendingIntent);
 
+        // Cargar imagen con Glide en caso de que el marcador tenga una URL de imagen
         if (marker.getImagenUrl() != null && !marker.getImagenUrl().isEmpty()) {
             try {
-                // Cargar imagen con Glide fuera del UI thread
+
                 AppWidgetTarget appWidgetTarget = new AppWidgetTarget(context, R.id.widget_image, views, appWidgetIds) {
                     @Override
                     public void onResourceReady(Bitmap resource, Transition<? super Bitmap> transition) {
@@ -184,13 +186,15 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
             views.setImageViewResource(R.id.widget_image, R.drawable.no_image);
         }
 
-        // Actualizar todos los widgets
+        // Actualizar el widget
         for (int appWidgetId : appWidgetIds) {
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
     }
 
     private void setUpdateAlarm(Context context) {
+
+        // Configurar un alarm manager para actualizar el widget cada 15 segundos
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(context, MarkerWidgetProvider.class);
         intent.setAction(ACTION_UPDATE_WIDGET);
@@ -209,7 +213,7 @@ public class MarkerWidgetProvider extends AppWidgetProvider {
         alarmManager.set(AlarmManager.ELAPSED_REALTIME,
                 SystemClock.elapsedRealtime() + 15000, pendingIntent);
 
-        Log.d(TAG, "Set alarm for next update in 15 seconds");
+        Log.d(TAG, "Update 15 seconds");
     }
 
     private void showNoMarkersMessage(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {

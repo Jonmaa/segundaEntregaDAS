@@ -124,6 +124,7 @@ public class PerfilActivity extends AppCompatActivity {
                 Toast.makeText(this, "Error al crear el archivo", Toast.LENGTH_SHORT).show();
             }
 
+            // Continuar solo si se creó el archivo
             if (photoFile != null) {
                 Uri photoURI = FileProvider.getUriForFile(this,
                         "com.example.segundaentregadas.fileprovider",
@@ -164,12 +165,12 @@ public class PerfilActivity extends AppCompatActivity {
     }
 
     private void updateUserName(String newName) {
-        // Local update via ContentProvider
+        // Actualizar nombre en la base de datos local
         ContentValues values = new ContentValues();
         values.put("_id", userId);
         values.put("nombre", newName);
 
-        // Update local database through ContentProvider
+        // Actualizar en la base de datos
         getContentResolver().update(
                 Uri.parse("content://com.example.segundaentregadas.userprovider/users/" + userId),
                 values,
@@ -177,18 +178,20 @@ public class PerfilActivity extends AppCompatActivity {
                 null
         );
 
-        // Update SharedPreferences
+        // Actualizar nombre en preferencias
         SharedPreferences.Editor editor = getSharedPreferences("AppPrefs", MODE_PRIVATE).edit();
         editor.putString("nombre", newName);
         editor.apply();
 
-        // Update UI
+        // Actualizar TextView
         tvNombre.setText("Nombre: " + newName);
 
         Toast.makeText(PerfilActivity.this, "Nombre actualizado correctamente", Toast.LENGTH_SHORT).show();
     }
 
     private File createImageFile() throws IOException {
+
+        // Crear un nombre de archivo único
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
         File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
@@ -217,11 +220,6 @@ public class PerfilActivity extends AppCompatActivity {
     private void uploadImageToServer() {
         File file = new File(currentPhotoPath);
 
-        Log.d("PerfilActivity", "Path: " + currentPhotoPath);
-        Log.d("PerfilActivity", "File exists: " + file.exists());
-        Log.d("PerfilActivity", "File size: " + file.length());
-        Log.d("PerfilActivity", "User ID: " + userId);
-
         // Comprimir para que no de problemas de tamaño
         File compressedFile = compressImage(file);
 
@@ -232,6 +230,7 @@ public class PerfilActivity extends AppCompatActivity {
             return;
         }
 
+        // Crear el cuerpo de la solicitud
         RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), compressedFile);
         MultipartBody.Part body = MultipartBody.Part.createFormData("foto", compressedFile.getName(), requestFile);
         RequestBody userIdBody = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(userId));
@@ -242,12 +241,11 @@ public class PerfilActivity extends AppCompatActivity {
         call.enqueue(new Callback<FotoResponse>() {
             @Override
             public void onResponse(Call<FotoResponse> call, Response<FotoResponse> response) {
-                Log.d("PerfilActivity", "Response code: " + response.code());
+
+                // Actualizar UI si success
                 try {
                     if (response.isSuccessful() && response.body() != null) {
                         FotoResponse fotoResponse = response.body();
-                        Log.d("PerfilActivity", "Success response: " + fotoResponse.toString());
-
                         if (fotoResponse.isSuccess()) {
                             String imageUrl = fotoResponse.getUrl();
 
@@ -283,11 +281,9 @@ public class PerfilActivity extends AppCompatActivity {
                         }
                     } else if (response.errorBody() != null) {
                         String errorBody = response.errorBody().string();
-                        Log.e("PerfilActivity", "Error body: " + errorBody);
                         Toast.makeText(PerfilActivity.this, "Error del servidor: " + errorBody, Toast.LENGTH_LONG).show();
                     }
                 } catch (Exception e) {
-                    Log.e("PerfilActivity", "Error processing response", e);
                     Toast.makeText(PerfilActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 }
             }
@@ -305,10 +301,10 @@ public class PerfilActivity extends AppCompatActivity {
 
     private File compressImage(File originalFile) {
         try {
-            // First, correct the rotation if needed
+            // Corregir la rotación
             File rotatedFile = rotateImageIfNeeded(originalFile);
 
-            // Create bitmap
+            // Crear bitmap
             BitmapFactory.Options bmOptions = new BitmapFactory.Options();
             bmOptions.inJustDecodeBounds = true;
             BitmapFactory.decodeFile(rotatedFile.getAbsolutePath(), bmOptions);
@@ -317,7 +313,7 @@ public class PerfilActivity extends AppCompatActivity {
             int photoHeight = bmOptions.outHeight;
             int scaleFactor = Math.max(1, Math.min(photoWidth/1200, photoHeight/1200));
 
-            // Decode the bitmap with reduced size
+            // Decodificar el bitmap con la escala
             bmOptions.inJustDecodeBounds = false;
             bmOptions.inSampleSize = scaleFactor;
 
@@ -330,29 +326,27 @@ public class PerfilActivity extends AppCompatActivity {
             fos.flush();
             fos.close();
 
-            Log.d("PerfilActivity", "Compressed Path: " + compressedFile.getAbsolutePath());
-            Log.d("PerfilActivity", "Compression: Original=" + originalFile.length() + " bytes, Compressed=" + compressedFile.length() + " bytes");
-
             return compressedFile;
 
         } catch (Exception e) {
-            Log.e("PerfilActivity", "Image compression failed", e);
-            return originalFile; // Return original if compression fails
+            return originalFile; // En caso de fallo devolver la imagen sin comprimir
         }
     }
 
     private File rotateImageIfNeeded(File imageFile) {
+
+        // Al cargar la foto en el perfil siempre sale rotada 90º a la izquierda
         try {
-            // Get bitmap from file
+            // Obtener el bitmap original
             Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
 
-            // Get the orientation from EXIF data
+            // Obtener la orientación de la imagen
             android.media.ExifInterface exif = new android.media.ExifInterface(imageFile.getAbsolutePath());
             int orientation = exif.getAttributeInt(
                     android.media.ExifInterface.TAG_ORIENTATION,
                     android.media.ExifInterface.ORIENTATION_NORMAL);
 
-            // Rotate bitmap if needed
+            // Rotación según la orientación
             int rotationAngle = 0;
             switch (orientation) {
                 case android.media.ExifInterface.ORIENTATION_ROTATE_90:
@@ -366,7 +360,7 @@ public class PerfilActivity extends AppCompatActivity {
                     break;
             }
 
-            // If rotation is needed, create a new rotated bitmap
+            // Si la imagen necesita rotación
             if (rotationAngle != 0) {
                 Matrix matrix = new Matrix();
                 matrix.postRotate(rotationAngle);
@@ -374,7 +368,7 @@ public class PerfilActivity extends AppCompatActivity {
                         bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(),
                         matrix, true);
 
-                // Save rotated bitmap to a new file
+                // Guardar la imagen rotada en un nuevo archivo
                 File rotatedFile = new File(getCacheDir(), "rotated_" + imageFile.getName());
                 FileOutputStream fos = new FileOutputStream(rotatedFile);
                 rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
@@ -386,8 +380,7 @@ public class PerfilActivity extends AppCompatActivity {
 
             return imageFile;
         } catch (Exception e) {
-            Log.e("PerfilActivity", "Error rotating image", e);
-            return imageFile; // Return original if rotation fails
+            return imageFile; // Devolver el archivo original en caso de error
         }
     }
 

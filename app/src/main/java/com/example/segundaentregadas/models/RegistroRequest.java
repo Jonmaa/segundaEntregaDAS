@@ -11,7 +11,6 @@ public class RegistroRequest {
         this.password = password;
     }
 
-    // Getters (necesarios para Retrofit)
     public String getNombre() {
         return nombre;
     }

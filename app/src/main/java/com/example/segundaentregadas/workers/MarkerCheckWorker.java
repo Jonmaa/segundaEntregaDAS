@@ -51,6 +51,7 @@ public class MarkerCheckWorker extends Worker {
         Context context = getApplicationContext();
         ApiService apiService = ApiClient.getClient().create(ApiService.class);
 
+        // Comprobar nuevos marcadores haciendo comparación con los IDs guardados
         try {
             SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
             Set<String> savedMarkerIds = prefs.getStringSet(PREF_MARKER_IDS, new HashSet<>());
@@ -94,6 +95,8 @@ public class MarkerCheckWorker extends Worker {
     }
 
     private void showNewMarkersNotification(int newMarkerCount) {
+
+        // Esta es la notificación que se muestra cada 15 minutos
         Context context = getApplicationContext();
 
         createNotificationChannel();

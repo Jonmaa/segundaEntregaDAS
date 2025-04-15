@@ -6,7 +6,6 @@ public class User {
     private String email;
     private String foto_url;
 
-    // Getters
     public int getId() {
         return id;
     }

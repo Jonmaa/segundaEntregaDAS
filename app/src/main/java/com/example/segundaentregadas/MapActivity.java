@@ -139,6 +139,7 @@ public class MapActivity extends AppCompatActivity {
         apiService.obtenerLugares().enqueue(new Callback<JsonArray>() {
             @Override
             public void onResponse(Call<JsonArray> call, Response<JsonArray> response) {
+                // Si success carga los marcadores en el mapa
                 if (response.isSuccessful() && response.body() != null) {
                     try {
                         JsonArray lugaresArray = response.body();
@@ -153,7 +154,6 @@ public class MapActivity extends AppCompatActivity {
                             GeoPoint location = new GeoPoint(latitud, longitud);
                             addMarkerToMap(nombre, descripcion, location, imagenUrl);
                         }
-                        Log.d(TAG, "Lugares cargados correctamente: " + lugaresArray.size());
                     } catch (Exception e) {
                         Log.e(TAG, "Error al procesar lugares: " + e.getMessage());
                     }
@@ -176,7 +176,7 @@ public class MapActivity extends AppCompatActivity {
         mapView.getOverlays().add(new org.osmdroid.views.overlay.Overlay() {
             @Override
             public boolean onLongPress(MotionEvent e, MapView mapView) {
-                // Convert screen coordinates to map coordinates
+                // Convertir coordenadas de pantalla a coordenadas geográficas
                 IGeoPoint point = mapView.getProjection().fromPixels((int)e.getX(), (int)e.getY());
                 showAddPointOfInterestDialog(new GeoPoint(point.getLatitude(), point.getLongitude()));
                 return true;
@@ -238,7 +238,7 @@ public class MapActivity extends AppCompatActivity {
             selectedImageUri = data.getData();
             Log.d(TAG, "Selected image URI: " + selectedImageUri);
 
-            // Use the class-level dialog reference
+            // Mostrar vista previa de la imagen seleccionada
             if (currentDialog != null && currentDialog.isShowing()) {
                 ImageView imgPreview = currentDialog.findViewById(R.id.imgPreview);
                 if (imgPreview != null) {
@@ -251,7 +251,7 @@ public class MapActivity extends AppCompatActivity {
 
     private void uploadImageAndSavePoi(Uri imageUri, String name, String description, GeoPoint location) {
         try {
-            // Convert URI to file
+            // Convertir URI a archivo
             InputStream inputStream = getContentResolver().openInputStream(imageUri);
             File tempFile = File.createTempFile("poi_image", ".jpg", getCacheDir());
             FileOutputStream fos = new FileOutputStream(tempFile);
@@ -264,10 +264,10 @@ public class MapActivity extends AppCompatActivity {
             fos.close();
             inputStream.close();
 
-            // Compress image
+            // Comprimir imagen para que no de problemas a la hora de subirla
             File compressedFile = compressImage(tempFile);
 
-            // Upload image
+            // Subir imagen
             RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), compressedFile);
             MultipartBody.Part body = MultipartBody.Part.createFormData("imagen", compressedFile.getName(), requestFile);
 
@@ -275,6 +275,8 @@ public class MapActivity extends AppCompatActivity {
             apiService.subirImagenLugar(body).enqueue(new Callback<FotoResponse>() {
                 @Override
                 public void onResponse(Call<FotoResponse> call, Response<FotoResponse> response) {
+
+                    // Si success, guarda el marcador
                     if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                         String imageUrl = response.body().getUrl();
                         savePoi(name, description, location, imageUrl);
@@ -286,52 +288,49 @@ public class MapActivity extends AppCompatActivity {
                 @Override
                 public void onFailure(Call<FotoResponse> call, Throwable t) {
                     Toast.makeText(MapActivity.this, "Error de red: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, "Network error: ", t);
                 }
             });
         } catch (IOException e) {
             Toast.makeText(this, "Error al procesar la imagen: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            Log.e(TAG, "Error processing image: ", e);
         }
     }
 
     private File compressImage(File originalFile) {
         try {
-            // Create bitmap from file
+            // Crear bitmap
             BitmapFactory.Options bmOptions = new BitmapFactory.Options();
             bmOptions.inJustDecodeBounds = true;
             BitmapFactory.decodeFile(originalFile.getAbsolutePath(), bmOptions);
 
-            // Calculate target size
+            // Calcular factor de escala
             int photoWidth = bmOptions.outWidth;
             int photoHeight = bmOptions.outHeight;
             int scaleFactor = Math.max(1, Math.min(photoWidth/1200, photoHeight/1200));
 
-            // Decode the image file into a smaller bitmap
+            // Decodificar el bitmap con la escala
             bmOptions.inJustDecodeBounds = false;
             bmOptions.inSampleSize = scaleFactor;
 
             Bitmap bitmap = BitmapFactory.decodeFile(originalFile.getAbsolutePath(), bmOptions);
 
-            // Create output compressed file
+            // Crear archivo comprimido
             File compressedFile = new File(getCacheDir(), "compressed_" + originalFile.getName());
             FileOutputStream fos = new FileOutputStream(compressedFile);
 
-            // Compress to JPEG with 70% quality
+            // Comprimir el bitmap
             bitmap.compress(Bitmap.CompressFormat.JPEG, 70, fos);
             fos.flush();
             fos.close();
 
-            Log.d(TAG, "Compression: Original=" + originalFile.length() + " bytes, Compressed=" + compressedFile.length() + " bytes");
-
             return compressedFile;
         } catch (Exception e) {
-            Log.e(TAG, "Image compression failed", e);
-            return originalFile; // Return original if compression fails
+            return originalFile; // En caso de fallo devolver la imagen sin comprimirla
         }
     }
 
     private void savePoi(String name, String description, GeoPoint location, String imageUrl) {
+
+        // Necesita haber un usuario identificado para poder guardar un marcador
         SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         int userId = prefs.getInt("user_id", 0);
 
@@ -340,6 +339,7 @@ public class MapActivity extends AppCompatActivity {
             return;
         }
 
+        // Crear objeto JSON para el lugar
         JsonObject lugarData = new JsonObject();
         lugarData.addProperty("nombre", name);
         lugarData.addProperty("descripcion", description);
@@ -352,19 +352,19 @@ public class MapActivity extends AppCompatActivity {
         apiService.agregarLugar(lugarData).enqueue(new Callback<ApiResponse>() {
             @Override
             public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+
+                // Si success, añade el marcador al mapa
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     Toast.makeText(MapActivity.this, "Punto de interés guardado", Toast.LENGTH_SHORT).show();
                     addMarkerToMap(name, description, location, imageUrl);
                 } else {
                     Toast.makeText(MapActivity.this, "Error al guardar punto de interés", Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, "Error saving POI: " + (response.body() != null ? response.body().getMessage() : "Unknown error"));
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse> call, Throwable t) {
                 Toast.makeText(MapActivity.this, "Error de red: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "Network error when saving POI: ", t);
             }
         });
     }
@@ -375,12 +375,11 @@ public class MapActivity extends AppCompatActivity {
         marker.setTitle(title);
         marker.setSnippet(description);
 
-        // Store the image URL in the marker
+        // Guardar la URL de la imagen en el objeto relacionado del marcador
         if (imageUrl != null && !imageUrl.isEmpty()) {
             marker.setRelatedObject(imageUrl);
         }
 
-        // Add click listener
         marker.setOnMarkerClickListener(new Marker.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker, MapView mapView) {
@@ -390,7 +389,6 @@ public class MapActivity extends AppCompatActivity {
         });
 
         try {
-            // Your existing icon code
             int drawableResource = R.drawable.map_marker_good;
             android.graphics.drawable.Drawable originalIcon = getResources().getDrawable(drawableResource);
             android.graphics.drawable.BitmapDrawable bd = (android.graphics.drawable.BitmapDrawable) originalIcon;
@@ -417,23 +415,21 @@ public class MapActivity extends AppCompatActivity {
     private void showMarkerOptionsDialog(Marker marker) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
-        // Create a custom dialog view
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_marker_details, null);
         TextView titleText = dialogView.findViewById(R.id.markerTitle);
         TextView descriptionText = dialogView.findViewById(R.id.markerDescription);
         ImageView imageView = dialogView.findViewById(R.id.markerImage);
 
-        // Set title and description
         titleText.setText(marker.getTitle());
         descriptionText.setText(marker.getSnippet());
 
-        // Get image URL from marker's related object (assuming it's stored in getRelatedObject())
+        // Obtener la URL de la imagen del objeto relacionado
         String imageUrl = null;
         if (marker.getRelatedObject() instanceof String) {
             imageUrl = (String) marker.getRelatedObject();
         }
 
-        // Load and display image if available
+        // Cargar la imagen si existe
         if (imageUrl != null && !imageUrl.isEmpty()) {
             com.bumptech.glide.Glide.with(this)
                     .load(imageUrl)
@@ -461,7 +457,7 @@ public class MapActivity extends AppCompatActivity {
             return;
         }
 
-        // Clear existing route lines
+        // Eliminar rutas anteriores
         List<Overlay> toRemove = new ArrayList<>();
         for (Overlay overlay : mapView.getOverlays()) {
             if (overlay instanceof Polyline && !(overlay instanceof MyLocationNewOverlay)) {
@@ -472,10 +468,10 @@ public class MapActivity extends AppCompatActivity {
 
         Toast.makeText(this, "Calculando ruta...", Toast.LENGTH_SHORT).show();
 
-        // Calculate route in background thread
+        // Calcular la ruta
         new Thread(() -> {
             RoadManager roadManager = new OSRMRoadManager(this, android.os.Build.MODEL);
-            ((OSRMRoadManager)roadManager).setMean(OSRMRoadManager.MEAN_BY_FOOT);
+            ((OSRMRoadManager)roadManager).setMean(OSRMRoadManager.MEAN_BY_FOOT); // Se puede poner también en bici o coche
 
             ArrayList<GeoPoint> waypoints = new ArrayList<>();
             waypoints.add(startPoint);
@@ -491,9 +487,7 @@ public class MapActivity extends AppCompatActivity {
                     mapView.getOverlays().add(roadOverlay);
                     mapView.invalidate();
 
-                    // Format and display route information
                     double distanceKm = road.mLength;
-                    // Adjust walking speed estimation (average walking speed is around 5 km/h)
                     double durationMin = (road.mDuration / 60);
 
                     String message = String.format("Distancia a pie: %.1f km, Tiempo: %.0f min",
@@ -505,7 +499,6 @@ public class MapActivity extends AppCompatActivity {
                     Toast.makeText(MapActivity.this,
                             "Error al calcular la ruta: " + e.getMessage(),
                             Toast.LENGTH_LONG).show();
-                    Log.e("MapActivity", "Routing error", e);
 
                     drawDirectLine(startPoint, destination);
                 });
@@ -524,27 +517,28 @@ public class MapActivity extends AppCompatActivity {
         mapView.getOverlays().add(line);
         mapView.invalidate();
 
-        // Calculate straight-line distance as fallback
+        // Calcular distancia directa
         double distanceKm = calculateDistance(start, end);
         Toast.makeText(this, "Distancia directa: " + String.format("%.1f", distanceKm) + " km",
                 Toast.LENGTH_LONG).show();
     }
 
     private double calculateDistance(GeoPoint p1, GeoPoint p2) {
-        // Calculate distance using Haversine formula
+
+        // Calcular distancia entre dos puntos geográficos usando la fórmula del haversine, el método lo ha hecho Copilot
         double lat1 = p1.getLatitude();
         double lon1 = p1.getLongitude();
         double lat2 = p2.getLatitude();
         double lon2 = p2.getLongitude();
 
-        double R = 6371; // Earth radius in km
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
+        double R = 6371; // Radio de la Tierra en km
+        double dLat = Math.toRadians(lat2 - lat1); // Convertir latitud a radianes
+        double dLon = Math.toRadians(lon2 - lon1); // Convertir longitud a radianes
         double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
                 Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
                         Math.sin(dLon/2) * Math.sin(dLon/2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
+        return R * c; // Distancia en km
     }
 
     private void requestPermissionsIfNecessary() {
@@ -571,7 +565,7 @@ public class MapActivity extends AppCompatActivity {
             GeoPoint myLocation = locationOverlay.getMyLocation();
             if (myLocation != null) {
                 mapView.getController().animateTo(myLocation);
-                mapView.getController().setZoom(18); // Nivel de zoom (mayor = más cercano)
+                mapView.getController().setZoom(18);
             }
         }));
     }
@@ -587,12 +581,12 @@ public class MapActivity extends AppCompatActivity {
     }
 
     private void scheduleMarkerChecker() {
-        // Define constraints: only run when device is connected to network
+        // Definir restricciones para el trabajo
         Constraints constraints = new Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build();
 
-
+        // Que el worker se ejecute cada 15 minutos
         PeriodicWorkRequest markerCheckRequest =
                 new PeriodicWorkRequest.Builder(
                         MarkerCheckWorker.class,
@@ -600,26 +594,19 @@ public class MapActivity extends AppCompatActivity {
                         .setConstraints(constraints)
                         .build();
 
-        // Schedule the work
+        // Programar el trabajo
         WorkManager.getInstance(this)
                 .enqueueUniquePeriodicWork(
                         "marker_check_work",
                         ExistingPeriodicWorkPolicy.REPLACE,
                         markerCheckRequest);
-
-        // Log.d(TAG, "Scheduled marker check worker to run every 6 hours");
     }
 
     private void cerrarSesion() {
-        // Aquí puedes limpiar cualquier dato de sesión (ej: SharedPreferences)
-        // Ejemplo:
-        //getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().clear().apply();
-
         SharedPreferences.Editor editor = getSharedPreferences("AppPrefs", MODE_PRIVATE).edit();
         editor.clear();
         editor.apply();
 
-        // Clear Glide's image cache
         Glide.get(this).clearMemory();
         new Thread(() -> {
             Glide.get(this).clearDiskCache();
@@ -652,16 +639,15 @@ public class MapActivity extends AppCompatActivity {
         } else {
             startService(serviceIntent);
         }
-
-        Log.d(TAG, "Started marker monitor service");
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     private void registerMarkerUpdateReceiver() {
+
+        // Se pone el suppressLint porque si no sale un error de que no se puede usar el flag pero es de otra versión
         markerUpdateReceiver = new MarkerUpdateReceiver();
         IntentFilter filter = new IntentFilter(MarkerMonitorService.ACTION_MARKER_UPDATE);
 
-        // Fix: Add the RECEIVER_EXPORTED flag (for Android 14+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(markerUpdateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
         } else {
@@ -671,7 +657,6 @@ public class MapActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        // Unregister receiver to prevent memory leaks
         if (markerUpdateReceiver != null) {
             unregisterReceiver(markerUpdateReceiver);
         }

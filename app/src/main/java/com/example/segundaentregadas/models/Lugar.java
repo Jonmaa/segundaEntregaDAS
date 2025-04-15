@@ -19,7 +19,7 @@ public class Lugar {
         this.usuario_id = usuario_id;
     }
 
-    // Getters and setters
+
     public int getId() {
         return id;
     }

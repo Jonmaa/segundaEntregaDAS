@@ -20,6 +20,8 @@ public class MarkerUpdateReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+
+        // Envia un broadcast para actualizar el widget de la app
         if (MarkerMonitorService.ACTION_MARKER_UPDATE.equals(intent.getAction())) {
             int newMarkersCount = intent.getIntExtra(MarkerMonitorService.EXTRA_NEW_MARKERS_COUNT, 0);
 

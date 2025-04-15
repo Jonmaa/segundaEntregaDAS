@@ -139,7 +139,7 @@ public class UserProvider extends ContentProvider {
                 selectionArgs = new String[] { String.valueOf(ContentUris.parseId(uri)) };
                 count = db.update(USERS_TABLE, values, selection, selectionArgs);
 
-                // Sync with server if we're updating a user
+                // Llamar a este método para sincronizar el usuario con el servidor
                 if (count > 0 && values.containsKey("nombre")) {
                     syncUserWithServer(values);
                 }
@@ -153,6 +153,8 @@ public class UserProvider extends ContentProvider {
     }
 
     private void syncUserWithServer(ContentValues values) {
+
+        // Sincronizar el usuario con el servidor
         int userId = values.getAsInteger("_id");
         String nombre = values.getAsString("nombre");
 

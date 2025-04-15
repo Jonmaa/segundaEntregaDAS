@@ -63,10 +63,10 @@ public class MarkerMonitorService extends Service {
         if (!isRunning) {
             isRunning = true;
 
-            // Start as foreground service with initial notification
+            // Empezar el servicio en primer plano
             startForeground(NOTIFICATION_ID, createNotification("Monitorizando marcadores", "Buscando nuevos marcadores..."));
 
-            // Schedule periodic marker checks
+            // Fijar chequeos cada 5 minutos
             scheduler = Executors.newSingleThreadScheduledExecutor();
             scheduler.scheduleAtFixedRate(this::checkForNewMarkers, 0, 5, TimeUnit.MINUTES);
 
@@ -99,10 +99,11 @@ public class MarkerMonitorService extends Service {
             Call<JsonArray> call = apiService.obtenerLugares();
             Response<JsonArray> response = call.execute();
 
+            // Comprobar cuantos marcadores nuevos hay
             if (response.isSuccessful() && response.body() != null) {
                 JsonArray markers = response.body();
 
-                // Get marker IDs from current response
+                // Obtener marcadores actuales
                 Set<String> currentMarkerIds = new HashSet<>();
                 for (JsonElement element : markers) {
                     if (element.isJsonObject()) {
@@ -113,28 +114,28 @@ public class MarkerMonitorService extends Service {
                     }
                 }
 
-                // Get previously saved marker IDs
+                // Obtener marcadores guardados
                 SharedPreferences prefs = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
                 Set<String> savedMarkerIds = prefs.getStringSet(PREF_MARKER_IDS, new HashSet<>());
 
-                // Find new markers
+                // Restas los marcadores actuales a los guardados
                 Set<String> newMarkerIds = new HashSet<>(currentMarkerIds);
                 newMarkerIds.removeAll(savedMarkerIds);
                 int newMarkersCount = newMarkerIds.size();
 
-                // Save current markers for next comparison
+                // Guardar los marcadores actuales
                 prefs.edit().putStringSet(PREF_MARKER_IDS, currentMarkerIds).apply();
 
-                // Update notification and broadcast result
+                // Mandar notificación
                 if (newMarkersCount > 0) {
                     String message = newMarkersCount == 1
                             ? "1 nuevo marcador encontrado"
                             : newMarkersCount + " nuevos marcadores encontrados";
 
-                    // Update foreground notification with new information
+                    // Actualizar la notificación con el nuevo mensaje
                     startForeground(NOTIFICATION_ID, createNotification("Nuevos puntos de interés!", message));
 
-                    // Send broadcast to notify UI
+                    // Enviar un broadcast para actualizar la UI
                     Intent updateIntent = new Intent(this, MarkerUpdateReceiver.class);
                     updateIntent.setAction(ACTION_MARKER_UPDATE);
                     updateIntent.putExtra(EXTRA_NEW_MARKERS_COUNT, newMarkersCount);

@@ -13,6 +13,8 @@ public class BootReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+
+        // Cuadndo el dispositivo se reinicia, se inicia el servicio de marcadores
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
             Log.d(TAG, "Boot completed, starting service");
 
